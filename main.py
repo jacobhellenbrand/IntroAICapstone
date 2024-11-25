@@ -55,7 +55,7 @@ conditions = [
     ('hadRushAttempt', 'tackleAssist'),
     ('hadDropback', 'hadInterception'),
     ('fumbleLost', 'fumbleRecoveries'),
-    ('fumbleLost', 'forcedFumbleAsDefense'),
+    ('fumbleLost', 'forcedFumbleAsDefense'), #maybe add forced fumble with rush attempt/pass recep
     ('hadDropback', 'causedPressure'),
     ('pressureAllowedAsBlocker', 'causedPressure'),
     ('hadDropback', 'passDefensed'),
@@ -132,8 +132,8 @@ def visualize_degree_distribution(degrees, name):
     # Log-log scale
     plt.figure(figsize=(8, 6))
     plt.loglog(unique_degrees, counts, 'o')
-    plt.xlabel("Degree (log scale)")
-    plt.ylabel("Number of Nodes (log scale)")
+    plt.xlabel("Degree")
+    plt.ylabel("Number of Nodes")
     plt.title(f'Log-Log Degree Distribution of {name}')
     plt.show()
 
@@ -150,7 +150,6 @@ def fit_power_law(degrees, name):
     print(f"The alpha value for {name}: {fit.alpha}")
     print(f"The xmin value for {name}: {fit.xmin}")
 
-    # Plot the power-law fit
     plt.figure(figsize=(8, 6))
     fit.plot_pdf(label='Empirical Data', color='blue')
     fit.power_law.plot_pdf(label='Power Law Fit', color='orange')
@@ -161,9 +160,5 @@ def fit_power_law(degrees, name):
     plt.show()
 
 degrees = get_degree_distribution(player_network)
-
-# Visualize degree distribution
 visualize_degree_distribution(degrees, "Player Network")
-
-# Fit and analyze power law
 fit_power_law(degrees, "Player Network")
