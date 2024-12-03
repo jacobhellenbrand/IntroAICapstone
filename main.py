@@ -85,7 +85,7 @@ conditions = [
     ('hadDropback', 'sackYardsAsDefense'),
     ('tackleAssist', 'tackleAssist'),
     ('forcedFumbleAsDefense', 'fumbleRecoveries'),
-    
+
 ]
 
 inverted_conditions = [(y, x) for x, y in conditions]
