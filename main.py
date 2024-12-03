@@ -48,23 +48,23 @@ def is_condition_met(row, variable):
     return False
 
 event_weights = {
-    ('hadDropback', 'hadPassReception'): 100/(184 + 27),
-    ('hadDropback', 'wasTargettedReceiver'): 100/(184 + 37),
-    ('hadPassReception', 'soloTackle'): 100/(27 + 23),
-    ('hadPassReception', 'tackleAssist'): 100/(27 + 14),
-    ('hadRushAttempt', 'soloTackle'): 100/(73 + 23),
-    ('hadRushAttempt', 'tackleAssist'): 100/(73 + 14),
-    ('hadDropback', 'hadInterception'): 100/(184 + 2),
-    ('fumbleLost', 'fumbleRecoveries'): 100/(2 + 1),
-    ('fumbleLost', 'forcedFumbleAsDefense'): 100/(2 + 1),
-    ('hadDropback', 'causedPressure'): 100/(184 + 10),
-    ('pressureAllowedAsBlocker', 'causedPressure'): 100/(16 + 10),
-    ('hadDropback', 'passDefensed'): 100/(184 + 3),
-    ('wasTargettedReceiver', 'passDefensed'): 100/(37 + 3),
-    ('hadDropback', 'quarterbackHit'): 100/(184 + 4),
-    ('hadDropback', 'sackYardsAsDefense'): 100/(184 + 18),
-    ('tackleAssist', 'tackleAssist'): 100/(14 + 14),
-    ('forcedFumbleAsDefense', 'fumbleRecoveries'): 100/(1 + 1),
+    ('hadDropback', 'hadPassReception'): 3,
+    ('hadDropback', 'wasTargettedReceiver'): 1,
+    ('hadPassReception', 'soloTackle'): 1,
+    ('hadPassReception', 'tackleAssist'): 1,
+    ('hadRushAttempt', 'soloTackle'): 0.8,
+    ('hadRushAttempt', 'tackleAssist'): 1/2,
+    ('hadDropback', 'hadInterception'): 3,
+    ('fumbleLost', 'fumbleRecoveries'): 2,
+    ('fumbleLost', 'forcedFumbleAsDefense'): 6,
+    ('hadDropback', 'causedPressure'): 1,
+    ('pressureAllowedAsBlocker', 'causedPressure'): 2,
+    ('hadDropback', 'passDefensed'): 1/2,
+    ('wasTargettedReceiver', 'passDefensed'): 3,
+    ('hadDropback', 'quarterbackHit'): 4,
+    ('hadDropback', 'sackYardsAsDefense'): 4,
+    ('tackleAssist', 'tackleAssist'): 2.5,
+    ('forcedFumbleAsDefense', 'fumbleRecoveries'): 7,
 }
 
 conditions = [
@@ -91,8 +91,11 @@ conditions = [
 inverted_conditions = [(y, x) for x, y in conditions]
 all_conditions = conditions + inverted_conditions
 
-# player_network = build_network(df, all_conditions)
-player_network = build_network(df, all_conditions, event_weights)
+symmetric_event_weights = event_weights.copy()
+for (a, b), weight in event_weights.items():
+    symmetric_event_weights[(b, a)] = weight
+
+player_network = build_network(df, all_conditions, symmetric_event_weights)
 
 
 print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
@@ -129,8 +132,8 @@ def get_degree_distribution(graph):
     return:
         A list of degrees for each node
     """
-    degrees = [degree for _, degree in graph.degree()]
-    return degrees
+    weighted_degrees = [degree for _, degree in graph.degree(weight='weight')]
+    return weighted_degrees
 
 def visualize_degree_distribution(degrees, name):
     """
