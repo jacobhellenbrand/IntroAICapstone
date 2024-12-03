@@ -6,8 +6,7 @@ import powerlaw
 import numpy as np
 
 df = pd.read_csv('player_play.csv')
-
-def build_network(df, conditions):
+def build_network(df, conditions, event_weights):
     graph = nx.Graph()
 
     for (game_id, play_id), play_data in df.groupby(['gameId', 'playId']):
@@ -25,12 +24,14 @@ def build_network(df, conditions):
                         player1 = player_data[(player1_var, player2_var)]
 
                         if player1 is not None and player2 is not None and player1 != player2:
-                            # Increment edge weight for each occurrence of the link
+                            edge_weight = event_weights.get((player1_var, player2_var), 0)
+
                             if graph.has_edge(player1, player2):
-                                graph[player1][player2]['weight'] += 1
+                                graph[player1][player2]['weight'] += edge_weight
                             else:
-                                graph.add_edge(player1, player2, weight=1)
+                                graph.add_edge(player1, player2, weight=edge_weight)
     return graph
+
 
 
 def is_condition_met(row, variable):
@@ -45,6 +46,26 @@ def is_condition_met(row, variable):
     elif isinstance(value, (int, float)):
         return pd.notna(value) and value >= 1
     return False
+
+event_weights = {
+    ('hadDropback', 'hadPassReception'): 100/(184 + 27),
+    ('hadDropback', 'wasTargettedReceiver'): 100/(184 + 37),
+    ('hadPassReception', 'soloTackle'): 100/(27 + 23),
+    ('hadPassReception', 'tackleAssist'): 100/(27 + 14),
+    ('hadRushAttempt', 'soloTackle'): 100/(73 + 23),
+    ('hadRushAttempt', 'tackleAssist'): 100/(73 + 14),
+    ('hadDropback', 'hadInterception'): 100/(184 + 2),
+    ('fumbleLost', 'fumbleRecoveries'): 100/(2 + 1),
+    ('fumbleLost', 'forcedFumbleAsDefense'): 100/(2 + 1),
+    ('hadDropback', 'causedPressure'): 100/(184 + 10),
+    ('pressureAllowedAsBlocker', 'causedPressure'): 100/(16 + 10),
+    ('hadDropback', 'passDefensed'): 100/(184 + 3),
+    ('wasTargettedReceiver', 'passDefensed'): 100/(37 + 3),
+    ('hadDropback', 'quarterbackHit'): 100/(184 + 4),
+    ('hadDropback', 'sackYardsAsDefense'): 100/(184 + 18),
+    ('tackleAssist', 'tackleAssist'): 100/(14 + 14),
+    ('forcedFumbleAsDefense', 'fumbleRecoveries'): 100/(1 + 1),
+}
 
 conditions = [
     ('hadDropback', 'hadPassReception'),
@@ -64,13 +85,15 @@ conditions = [
     ('hadDropback', 'sackYardsAsDefense'),
     ('tackleAssist', 'tackleAssist'),
     ('forcedFumbleAsDefense', 'fumbleRecoveries'),
+    
 ]
 
 inverted_conditions = [(y, x) for x, y in conditions]
 all_conditions = conditions + inverted_conditions
 
-game_id = 2022090800
-player_network = build_network(df, all_conditions)
+# player_network = build_network(df, all_conditions)
+player_network = build_network(df, all_conditions, event_weights)
+
 
 print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
 nx.draw(player_network, with_labels=True, node_size=500, node_color="orange", font_size=8)
