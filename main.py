@@ -65,7 +65,12 @@ event_weights = {
     ('hadDropback', 'sackYardsAsDefense'): 4,
     ('tackleAssist', 'tackleAssist'): 2.5,
     ('forcedFumbleAsDefense', 'fumbleRecoveries'): 7,
+    ('forcedFumbleAsDefense', 'hadPassReception'): 6, #new
+    ('forcedFumbleAsDefense', 'hadRushAttempt'): 6, #new
+    ('hadDropback', 'tackleAssist'): 2, #new
+    ('hadDropback', 'soloTackle'): 3, #new
 }
+
 
 conditions = [
     ('hadDropback', 'hadPassReception'),
@@ -77,15 +82,18 @@ conditions = [
     ('hadDropback', 'hadInterception'),
     ('fumbleLost', 'fumbleRecoveries'),
     ('fumbleLost', 'forcedFumbleAsDefense'), #maybe add forced fumble with rush attempt/pass recep
+    ('forcedFumbleAsDefense', 'hadPassReception'), #new
+    ('forcedFumbleAsDefense', 'hadRushAttempt'), #new
     ('hadDropback', 'causedPressure'),
     ('pressureAllowedAsBlocker', 'causedPressure'),
     ('hadDropback', 'passDefensed'),
     ('wasTargettedReceiver', 'passDefensed'),
     ('hadDropback', 'quarterbackHit'),
     ('hadDropback', 'sackYardsAsDefense'),
+    ('hadDropback', 'tackleAssist'), #new
+    ('hadDropback', 'soloTackle'), #new
     ('tackleAssist', 'tackleAssist'),
-    ('forcedFumbleAsDefense', 'fumbleRecoveries'),
-
+    ('forcedFumbleAsDefense', 'fumbleRecoveries')
 ]
 
 inverted_conditions = [(y, x) for x, y in conditions]
@@ -132,6 +140,7 @@ def get_degree_distribution(graph):
     return:
         A list of degrees for each node
     """
+                                                #weight='weight'
     weighted_degrees = [degree for _, degree in graph.degree(weight='weight')]
     return weighted_degrees
 
