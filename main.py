@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import powerlaw
 import numpy as np
+from mpmath import degree
 
 df = pd.read_csv('player_play.csv')
 def build_network(df, conditions, event_weights):
@@ -47,29 +48,65 @@ def is_condition_met(row, variable):
         return pd.notna(value) and value >= 1
     return False
 
-event_weights = {
+# Dictionary of event pairs
+event_pairs = {
     ('hadDropback', 'hadPassReception'): 3,
     ('hadDropback', 'wasTargettedReceiver'): 1,
-    ('hadPassReception', 'soloTackle'): 1,
-    ('hadPassReception', 'tackleAssist'): 1,
-    ('hadRushAttempt', 'soloTackle'): 0.8,
-    ('hadRushAttempt', 'tackleAssist'): 1/2,
+    ('hadPassReception', 'soloTackle'): 2,
+    ('hadPassReception', 'tackleAssist'): 1.5,
+    ('hadRushAttempt', 'soloTackle'): 3,
+    ('hadRushAttempt', 'tackleAssist'): 1.5,
     ('hadDropback', 'hadInterception'): 3,
     ('fumbleLost', 'fumbleRecoveries'): 2,
     ('fumbleLost', 'forcedFumbleAsDefense'): 6,
-    ('hadDropback', 'causedPressure'): 1,
+    ('hadDropback', 'causedPressure'): 3,
     ('pressureAllowedAsBlocker', 'causedPressure'): 2,
-    ('hadDropback', 'passDefensed'): 1/2,
+    ('hadDropback', 'passDefensed'): 3,
     ('wasTargettedReceiver', 'passDefensed'): 3,
     ('hadDropback', 'quarterbackHit'): 4,
     ('hadDropback', 'sackYardsAsDefense'): 4,
     ('tackleAssist', 'tackleAssist'): 2.5,
     ('forcedFumbleAsDefense', 'fumbleRecoveries'): 7,
-    ('forcedFumbleAsDefense', 'hadPassReception'): 6, #new
-    ('forcedFumbleAsDefense', 'hadRushAttempt'): 6, #new
-    ('hadDropback', 'tackleAssist'): 2, #new
-    ('hadDropback', 'soloTackle'): 3, #new
+    ('forcedFumbleAsDefense', 'hadPassReception'): 6,
+    ('forcedFumbleAsDefense', 'hadRushAttempt'): 6,
+    ('hadDropback', 'tackleAssist'): 2,
+    ('hadDropback', 'soloTackle'): 3,
 }
+
+# Dictionary of event values
+event_values = {
+    'Rush Attempt': 73+7,
+    'hadDropback': 184,
+    'wasTargettedReceiver': 37+10,
+    'hadPassReception': 27+8,
+    'soloTackle': 23,
+    'tackleAssist': 14,
+    'hadInterception': 2 + 18.4 + 7.3 + 2.7,
+    'fumbleLost': 2+ 18.4 + 7.3 + 2.7,
+    'fumbleRecoveries': 1+ 18.4 + 7.3 + 2.7,
+    'forcedFumbleAsDefense': 1 + 18.4 + 7.3 + 2.7,
+    'causedPressure': 10 + 18.4 + 7.3 + 2.7,
+    'pressureAllowedAsBlocker': 16,
+    'passDefensed': 3 + 18.4 + 7.3 + 2.7,
+    'quarterbackHit': 4 + 18.4 + 7.3 + 2.7,
+    'sackYardsAsDefense': 18 + 18.4 + 7.3 + 2.7,
+}
+
+# Calculate new values for each pair
+updated_event_pairs = {}
+for (event1, event2), _ in event_pairs.items():
+    value1 = event_values.get(event1, 0)  # Get the value for the first event
+    value2 = event_values.get(event2, 0)  # Get the value for the second event
+    if value1 + value2 != 0:
+        new_value = 10 / (value1 + value2)  # Calculate the new value
+    else:
+        new_value = 0  # Avoid division by zero
+    updated_event_pairs[(event1, event2)] = new_value
+
+# Print updated dictionary
+for key, value in updated_event_pairs.items():
+    print(f"{key}: {value:.3f}")
+
 
 
 conditions = [
@@ -99,8 +136,8 @@ conditions = [
 inverted_conditions = [(y, x) for x, y in conditions]
 all_conditions = conditions + inverted_conditions
 
-symmetric_event_weights = event_weights.copy()
-for (a, b), weight in event_weights.items():
+symmetric_event_weights = updated_event_pairs.copy()
+for (a, b), weight in updated_event_pairs.items():
     symmetric_event_weights[(b, a)] = weight
 
 player_network = build_network(df, all_conditions, symmetric_event_weights)
@@ -134,23 +171,15 @@ print("Player network nodes and edges have been saved to 'player_network_nodes.c
 def get_degree_distribution(graph):
     """
     Extracts the degree distribution from a NetworkX graph.
-
-    param:
-        graph: A NetworkX graph object
-    return:
-        A list of degrees for each node
     """
                                                 #weight='weight'
     weighted_degrees = [degree for _, degree in graph.degree(weight='weight')]
     return weighted_degrees
 
+
 def visualize_degree_distribution(degrees, name):
     """
     Visualize the degree distribution on linear and log-log scales.
-
-    param:
-        degrees: List of node degrees
-        name: Title for the plots
     """
     # Unique degree values and their counts
     unique_degrees = np.unique(degrees)
@@ -172,14 +201,35 @@ def visualize_degree_distribution(degrees, name):
     plt.title(f'Log-Log Degree Distribution of {name}')
     plt.show()
 
+def visualize_cumulative_degree_distribution(degrees, name):
+    """
+    Visualize the cumulative degree distribution on linear and log-log scales.
+    """
+    unique_degrees, counts = np.unique(degrees, return_counts=True)
+
+    cumulative_counts = np.cumsum(counts[::-1])[::-1]
+    cumulative_distribution = cumulative_counts / sum(counts)
+
+    # Linear scale
+    plt.figure(figsize=(8, 6))
+    plt.plot(unique_degrees, cumulative_distribution, 'o')
+    plt.xlabel("Degree")
+    plt.ylabel("Cumulative Fraction of Nodes")
+    plt.title(f'Cumulative Degree Distribution of {name}')
+    plt.show()
+
+    # Log-log scale
+    plt.figure(figsize=(8, 6))
+    plt.loglog(unique_degrees, cumulative_distribution, 'o')
+    plt.xlabel("Degree")
+    plt.ylabel("Cumulative Fraction of Nodes")
+    plt.title(f'Log-Log Cumulative Degree Distribution of {name}')
+    plt.show()
+
 
 def fit_power_law(degrees, name):
     """
     Fit a power law to the degree distribution and print alpha and xmin values.
-
-    param:
-        degrees: List of node degrees
-        name: Title for the dataset
     """
     fit = powerlaw.Fit(degrees, discrete=True)
     print(f"The alpha value for {name}: {fit.alpha}")
@@ -196,4 +246,5 @@ def fit_power_law(degrees, name):
 
 degrees = get_degree_distribution(player_network)
 visualize_degree_distribution(degrees, "Player Network")
+visualize_cumulative_degree_distribution(degrees, "Player Network")
 fit_power_law(degrees, "Player Network")
