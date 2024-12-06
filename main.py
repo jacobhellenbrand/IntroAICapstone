@@ -50,60 +50,59 @@ def is_condition_met(row, variable):
 
 # Dictionary of event pairs
 event_pairs = {
-    ('hadDropback', 'hadPassReception'): 3,
-    ('hadDropback', 'wasTargettedReceiver'): 1,
-    ('hadPassReception', 'soloTackle'): 2,
-    ('hadPassReception', 'tackleAssist'): 1.5,
-    ('hadRushAttempt', 'soloTackle'): 3,
-    ('hadRushAttempt', 'tackleAssist'): 1.5,
-    ('hadDropback', 'hadInterception'): 3,
-    ('fumbleLost', 'fumbleRecoveries'): 2,
-    ('fumbleLost', 'forcedFumbleAsDefense'): 6,
-    ('hadDropback', 'causedPressure'): 3,
-    ('pressureAllowedAsBlocker', 'causedPressure'): 2,
-    ('hadDropback', 'passDefensed'): 3,
-    ('wasTargettedReceiver', 'passDefensed'): 3,
-    ('hadDropback', 'quarterbackHit'): 4,
-    ('hadDropback', 'sackYardsAsDefense'): 4,
-    ('tackleAssist', 'tackleAssist'): 2.5,
-    ('forcedFumbleAsDefense', 'fumbleRecoveries'): 7,
-    ('forcedFumbleAsDefense', 'hadPassReception'): 6,
-    ('forcedFumbleAsDefense', 'hadRushAttempt'): 6,
-    ('hadDropback', 'tackleAssist'): 2,
-    ('hadDropback', 'soloTackle'): 3,
+    ('hadDropback', 'hadPassReception'): 0,
+    ('hadDropback', 'wasTargettedReceiver'): 0,
+    ('hadPassReception', 'soloTackle'): 0,
+    ('hadPassReception', 'tackleAssist'): 0,
+    ('hadRushAttempt', 'soloTackle'): 0,
+    ('hadRushAttempt', 'tackleAssist'): 0,
+    ('hadDropback', 'hadInterception'): 0,
+    ('fumbleLost', 'fumbleRecoveries'): 0,
+    ('fumbleLost', 'forcedFumbleAsDefense'): 0,
+    ('hadDropback', 'causedPressure'): 0,
+    ('pressureAllowedAsBlocker', 'causedPressure'): 0,
+    ('hadDropback', 'passDefensed'): 0,
+    ('wasTargettedReceiver', 'passDefensed'): 0,
+    ('hadDropback', 'quarterbackHit'): 0,
+    ('hadDropback', 'sackYardsAsDefense'): 0,
+    ('tackleAssist', 'tackleAssist'): 0,
+    ('forcedFumbleAsDefense', 'fumbleRecoveries'): 0,
+    ('forcedFumbleAsDefense', 'hadPassReception'): 0,
+    ('forcedFumbleAsDefense', 'hadRushAttempt'): 0,
+    ('hadDropback', 'tackleAssist'): 0,
+    ('hadDropback', 'soloTackle'): 0,
 }
+
+#Adjust the weight by 10% of the 3 main ball carriers
+adjTurn = 18.4 + 8.7 + 2.7
 
 # Dictionary of event values
 event_values = {
-    'Rush Attempt': 73+7,
+    'Rush Attempt': 87,
     'hadDropback': 184,
-    'wasTargettedReceiver': 37+10,
-    'hadPassReception': 27+8,
+    'wasTargettedReceiver': 37,
+    'hadPassReception': 27,
     'soloTackle': 23,
     'tackleAssist': 14,
-    'hadInterception': 2 + 18.4 + 7.3 + 2.7,
-    'fumbleLost': 2+ 18.4 + 7.3 + 2.7,
-    'fumbleRecoveries': 1+ 18.4 + 7.3 + 2.7,
-    'forcedFumbleAsDefense': 1 + 18.4 + 7.3 + 2.7,
-    'causedPressure': 10 + 18.4 + 7.3 + 2.7,
+    'hadInterception': 2 + adjTurn,
+    'fumbleLost': 2 + adjTurn,
+    'fumbleRecoveries': 1 + adjTurn,
+    'forcedFumbleAsDefense': 1 + adjTurn,
+    'causedPressure': 10 + adjTurn,
     'pressureAllowedAsBlocker': 16,
-    'passDefensed': 3 + 18.4 + 7.3 + 2.7,
-    'quarterbackHit': 4 + 18.4 + 7.3 + 2.7,
-    'sackYardsAsDefense': 18 + 18.4 + 7.3 + 2.7,
+    'passDefensed': 3 + adjTurn,
+    'quarterbackHit': 4 + adjTurn,
+    'sackYardsAsDefense': 18 + adjTurn,
 }
 
 # Calculate new values for each pair
 updated_event_pairs = {}
 for (event1, event2), _ in event_pairs.items():
-    value1 = event_values.get(event1, 0)  # Get the value for the first event
-    value2 = event_values.get(event2, 0)  # Get the value for the second event
-    if value1 + value2 != 0:
-        new_value = 10 / (value1 + value2)  # Calculate the new value
-    else:
-        new_value = 0  # Avoid division by zero
+    value1 = event_values.get(event1, 0)
+    value2 = event_values.get(event2, 0)
+    new_value = 10 / (value1 + value2)
     updated_event_pairs[(event1, event2)] = new_value
 
-# Print updated dictionary
 for key, value in updated_event_pairs.items():
     print(f"{key}: {value:.3f}")
 
