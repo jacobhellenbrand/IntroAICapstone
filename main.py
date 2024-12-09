@@ -139,7 +139,13 @@ symmetric_event_weights = updated_event_pairs.copy()
 for (a, b), weight in updated_event_pairs.items():
     symmetric_event_weights[(b, a)] = weight
 
-player_network = build_network(df, all_conditions, symmetric_event_weights)
+# ========= Filter for one game =============
+specific_game_id = 2022092501 #Bears Vs Texans
+df_filtered = df[df['gameId'] == specific_game_id].reset_index(drop=True)
+
+
+# ======== Build the Network ===========
+player_network = build_network(df_filtered, all_conditions, symmetric_event_weights)
 
 
 print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
@@ -155,8 +161,6 @@ for _, player_row in player_df.iterrows():
         # Add player name/position to the node
         player_network.nodes[nfl_id]['name'] = player_row['displayName']
         player_network.nodes[nfl_id]['position'] = player_row['position']
-
-
 for _, row in df.iterrows():
     nfl_id = row['nflId']
     if nfl_id in player_network.nodes:
