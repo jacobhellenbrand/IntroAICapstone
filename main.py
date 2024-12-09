@@ -156,10 +156,18 @@ for _, player_row in player_df.iterrows():
         player_network.nodes[nfl_id]['name'] = player_row['displayName']
         player_network.nodes[nfl_id]['position'] = player_row['position']
 
+
+for _, row in df.iterrows():
+    nfl_id = row['nflId']
+    if nfl_id in player_network.nodes:
+        # Add team abbreviation as a node attribute
+        player_network.nodes[nfl_id]['team'] = row['teamAbbr']
+
 downloads_path = os.path.expanduser('~/Desktop/Math-479')
-node_data = [(nfl_id, data['name'], data['position']) for nfl_id, data in player_network.nodes(data=True)]
-node_data_df = pd.DataFrame(node_data, columns=['ID', 'Label', 'Position'])
+node_data = [(nfl_id, data['name'], data['position'], data.get('team')) for nfl_id, data in player_network.nodes(data=True)]
+node_data_df = pd.DataFrame(node_data, columns=['ID', 'Label', 'Position', 'Team'])
 node_data_df.to_csv(os.path.join(downloads_path, 'player_network_nodes.csv'), index=False)
+
 edges_data = [(player1, player2, data['weight']) for player1, player2, data in player_network.edges(data=True)]
 edges_data_df = pd.DataFrame(edges_data, columns=['Source', 'Target', 'Weight'])
 edges_data_df.to_csv(os.path.join(downloads_path, 'player_network_edges.csv'), index=False)
