@@ -145,7 +145,7 @@ df_filtered = df[df['gameId'] == specific_game_id].reset_index(drop=True)
 
 
 # ======== Build the Network ===========
-player_network = build_network(df_filtered, all_conditions, symmetric_event_weights)
+player_network = build_network(df, all_conditions, symmetric_event_weights)
 
 
 print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
