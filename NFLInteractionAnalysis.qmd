@@ -1,0 +1,272 @@
+---
+title: "NFL Interactions"
+format: html
+editor: visual
+---
+
+```{r include = FALSE}
+# This chunk just sets up some styling (eg: default size of our images)
+knitr::opts_chunk$set(
+  collapse = TRUE, 
+  warning = FALSE,
+  message = FALSE,
+  fig.height = 2.75, 
+  fig.width = 4.25,
+  fig.align = 'center')
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+```
+
+```{r}
+# Preparing Data
+data <- read_csv("playerNetwork3.csv")
+
+teamNames <- read_csv("player_network_nodes.csv")
+
+data <- data %>% rename(PlayerName = PlayerName2)
+
+teamNames <- teamNames %>% rename(PlayerName = Label)
+
+player_play <- read_csv("~/Desktop/DS-112/Project/player_play.csv")
+
+players <- read_csv("~/Desktop/DS-112/Project/players.csv")
+
+# view(modData)
+
+# view(data)
+# summary(data)
+```
+
+```{r}
+dim(player_play)
+
+dim(players)
+```
+
+```{r}
+
+data <- data %>% 
+  mutate(
+    simplePosition = case_when(
+      position %in% c("C", "G", "T") ~ "OLine",     
+      position %in% c("CB", "FS", "SS", "DB") ~ "DB",                      
+      position %in% c("OLB", "ILB", "LB", "MLB") ~ "LB",
+      position %in% c("NT", "DE", "DT") ~ "DLine", 
+      position %in% c("QB") ~ "QB",
+      position %in% c("RB") ~ "RB",
+      position %in% c("WR") ~ "WR",
+      position %in% c("TE") ~ "TE",
+      position %in% c("FB") ~ "FB"
+    )
+  ) %>% 
+  na.omit()
+
+data %>%
+  group_by(simplePosition) %>%
+  top_n(1, pageranks) %>% 
+  head(14)
+
+modData <- left_join(data, teamNames, by = "PlayerName") %>%
+  mutate(
+    sideBall = case_when(
+      position %in% c("C", "G", "T","QB","RB","WR","TE","FB") ~ "Offense",
+      position %in% c("CB", "FS", "SS", "DB","OLB", "ILB", "LB", "MLB","NT", "DE", "DT") ~ "Defense"
+    )
+  ) %>%
+  na.omit()
+
+view(modData)
+#write.csv(modData, "modData.csv", row.names = FALSE)
+
+```
+
+```{r}
+# Weighted Degree vs Pagerank scatterplot
+ggplot(data, aes(x = WeightedDegree, y = pageranks, color = simplePosition)) + 
+  geom_point(size = 3, alpha = 0.7) +  
+  labs(
+    title = "Filtered Weighted Degree vs Pageranks",  
+    x = "Weighted Degree",                         
+    y = "Pagerank Score",                          
+    color = "Position Group"                       
+  ) + 
+  theme_minimal() +  
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  
+    axis.title = element_text(size = 12),  
+    axis.text = element_text(size = 10),   
+    legend.position = "top"                
+  ) 
+```
+
+```{r}
+#Find max page rank scores for specific position groups
+max_page <- data %>%
+  filter(simplePosition %in% c("LB", "QB", "RB", "DLine")) %>%
+  group_by(simplePosition) %>%
+  top_n(1, pageranks) %>%
+  ungroup()
+
+#Scatter plot of Betweenness vs PageRank with Labels on 4 position groups based on max page rank score of group
+ggplot(data, aes(x = betweenesscentrality, y = pageranks, color = simplePosition)) + 
+  geom_point(size = 3, alpha = 0.7) +  
+  geom_point(data = max_page, size = 3, shape = 25, fill = "white", stroke = 2) +
+  labs(
+    title = "Betweenness vs PageRank",  
+    x = "Betweenness",                          
+    y = "Pagerank Score",                           
+    color = "Position Group"                      
+  ) + 
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Center title and adjust size
+    axis.title = element_text(size = 12),  
+    axis.text = element_text(size = 10),  
+    legend.position = "top"                
+  )+
+  geom_text(data = max_page, 
+            aes(label = PlayerName), 
+            vjust = -1, 
+            color = "black",
+            fontface = "bold", size = 3.5) +
+  xlim(0, .028) +  
+  ylim(0, .004)
+
+```
+
+```{r}
+# Filter max weighted degree point for 4 position groups 
+max_weighted_degree <- data %>%
+  filter(simplePosition %in% c("LB", "QB", "RB", "DLine")) %>%
+  group_by(simplePosition) %>%
+  top_n(1, WeightedDegree) %>%
+  ungroup()
+
+#Scatter plot of weighted degree vs page ranks with labels for 4 points in 4 position groups with max pagerank score
+ggplot(data, aes(x = WeightedDegree, y = pageranks, color = simplePosition)) + 
+  geom_point(size = 3, alpha = 0.7) + # Other points as normal
+  geom_point(data = max_page, size = 3, shape = 25, fill = "white", stroke = 2) +  # Only for labeled points
+  labs(
+    title = "Weighted Degree vs PageRank",  
+    x = "Weighted Degree",                           
+    y = "PageRank Score",                           
+    color = "Position Group"                        
+  ) + 
+  theme_minimal() +   
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  
+    axis.title = element_text(size = 12),   
+    axis.text = element_text(size = 10),   
+    legend.position = "top"                
+  ) + 
+  geom_text(data = max_page, #Add labels by max page rank  
+            aes(label = PlayerName),  
+            vjust = -1,  
+            color = "black",
+            fontface = "bold", size = 3.5) + 
+  xlim(0, 105) +   
+  ylim(0, .004)
+```
+
+```{r}
+# Data table of highest page rank score for all position groups
+data %>%
+  filter(simplePosition %in% c("LB", "QB", "RB", "WR", "DLine", "DB", "Oline")) %>%
+  group_by(simplePosition) %>%
+  top_n(1, pageranks) 
+
+modData %>% 
+  count(simplePosition)
+```
+
+```{r}
+#PageRank vs Betweenness
+correlation <- cor(data$pageranks, data$betweenesscentrality, method = "pearson")
+print(correlation)
+
+#PageRank vs WeightedDegree
+correlation <- cor(data$pageranks, data$WeightedDegree, method = "pearson")
+print(correlation)
+
+#Betweenness Vs WeightedDegree
+correlation <- cor(data$betweenesscentrality, data$WeightedDegree, method = "pearson")
+print(correlation)
+```
+
+```{r}
+
+modData %>%
+  select(Modularity, Team) %>%
+  group_by(Modularity) %>%
+  summarize(Team_Count = n())
+
+modData %>%
+  group_by(Modularity, Team) %>%
+  summarize(Count = n(), .groups = "drop") %>%
+  group_by(Modularity) %>%
+  top_n(10, Count) %>%
+  arrange(Modularity, desc(Count))
+```
+
+```{r}
+# Count teams per modularity
+teamCounts <- modData %>%
+  select(Modularity, Team, sideBall) %>%
+  group_by(Modularity) %>%
+  summarize(Team_Count = n())
+
+# Analyze the top teams per modularity with `sideBall` consideration
+modData %>%
+  group_by(Modularity, Team, sideBall) %>%
+  summarize(Count = n(), .groups = "drop") %>%
+  group_by(Modularity, Team) %>%
+  summarize(
+    Total_Count = sum(Count), 
+    Offense_Count = sum(Count[sideBall == "Offense"]),
+    Defense_Count = sum(Count[sideBall == "Defense"]),
+    .groups = "drop"
+  ) %>%
+  group_by(Modularity) %>%
+  top_n(10, Total_Count) %>%
+  arrange(Modularity, desc(Total_Count)) %>% 
+  filter(Modularity == 1)
+
+```
+
+```{r}
+
+# Select top 10 players for each metric
+top_pageranks <- data %>%
+  arrange(desc(pageranks)) %>%
+  slice(1:10) %>%
+  pull(PlayerName)
+
+top_weighted_degree <- data %>%
+  arrange(desc(WeightedDegree)) %>%
+  slice(1:10) %>%
+  pull(PlayerName)
+
+top_betweenness <- data %>%
+  arrange(desc(eigencentrality)) %>%
+  slice(1:10) %>%
+  pull(PlayerName)
+
+# Combine into a single table
+top_combined <- tibble::tibble(
+  Rank = 1:10,
+  PageRank = top_pageranks,
+  WeightedDegree = top_weighted_degree,
+  BetweennessCentrality = top_betweenness
+)
+
+# Print table
+kable(top_combined, col.names = c(
+  "Rank", "PageRank (Player)", "Weighted Degree (Player)", "Betweenness Centrality (Player)"
+), caption = "Top 10 Players by Metrics", format = "markdown")
+
+```
