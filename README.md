@@ -21,6 +21,7 @@ As well the plays csv is listed for possible future work.
 The first of them being an RStudio file that helped to analyze important nodes in the network. If you download
 the file and have it in the same folder as the csv's the code should be able to run non problematically. 
   * The python code will need to be ran before using the RStudio file, as it creates 2 necessary csv's
+    * Edit line 176 to your devices correct download path
   * Additionally, you will need to download the playerNetwork3.csv to have the code run, see below. 
   * There is also code in the RStudio file that aids in adding useful information such as grouped positions, offense/defense
   terms, and adds the players teams to their row. 
