@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import os
 import powerlaw
 import numpy as np
-from mpmath import degree
 
 df = pd.read_csv('player_play.csv')
 def build_network(df, conditions, event_weights):
     graph = nx.Graph()
 
     for (game_id, play_id), play_data in df.groupby(['gameId', 'playId']):
+        print(f"Processing Game ID: {game_id}, Play ID: {play_id}")
         player_data = {condition: None for condition in conditions}
 
         for _, row in play_data.iterrows():
@@ -35,13 +35,14 @@ def build_network(df, conditions, event_weights):
 
 
 
+
 def is_condition_met(row, variable):
     """
     Check if the given condition (column) is met. This handles both booleans and numeric conditions.
     """
     value = row.get(variable)
 
-    print(f"Checking condition for {variable}: {value}")
+    # print(f"Checking condition for {variable}: {value}")
     if isinstance(value, bool):
         return value is True
     elif isinstance(value, (int, float)):
@@ -147,12 +148,6 @@ df_filtered = df[df['gameId'] == specific_game_id].reset_index(drop=True)
 # ======== Build the Network ===========
 player_network = build_network(df, all_conditions, symmetric_event_weights)
 
-
-print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
-nx.draw(player_network, with_labels=True, node_size=500, node_color="orange", font_size=8)
-plt.title("Player Interaction Network")
-plt.show()
-
 player_df = pd.read_csv('players.csv')
 
 for _, player_row in player_df.iterrows():
@@ -166,6 +161,14 @@ for _, row in df.iterrows():
     if nfl_id in player_network.nodes:
         # Add team abbreviation as a node attribute
         player_network.nodes[nfl_id]['team'] = row['teamAbbr']
+
+
+# ======== Visualization of Network ============
+
+print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
+nx.draw(player_network, with_labels=True, node_size=500, node_color="orange", font_size=8)
+plt.title("Player Interaction Network")
+plt.show()
 
 downloads_path = os.path.expanduser('~/Desktop/Math-479')
 node_data = [(nfl_id, data['name'], data['position'], data.get('team')) for nfl_id, data in player_network.nodes(data=True)]
