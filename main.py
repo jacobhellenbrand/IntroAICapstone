@@ -7,41 +7,43 @@ import numpy as np
 
 df = pd.read_csv('player_play.csv')
 def build_network(df, conditions, event_weights):
+    """
+    Creates a undirected graph based on a csv, edge pair conditions, and weights to be assigned
+    """
     graph = nx.Graph()
 
     for (game_id, play_id), play_data in df.groupby(['gameId', 'playId']):
         print(f"Processing Game ID: {game_id}, Play ID: {play_id}")
         player_data = {condition: None for condition in conditions}
-
+        # Iterate through rows of the play data.
         for _, row in play_data.iterrows():
             for player1_var, player2_var in conditions:
+                # Check if the first player (player1) has already been identified
                 if player_data[(player1_var, player2_var)] is None:
                     if is_condition_met(row, player1_var):
                         player_data[(player1_var, player2_var)] = row['nflId']
-
+                # If player1 is identified, check for player2
                 if player_data[(player1_var, player2_var)] is not None:
                     if is_condition_met(row, player2_var):
                         player2 = row['nflId']
                         player1 = player_data[(player1_var, player2_var)]
 
+                        # Ensure player1 and player2 are distinct
                         if player1 is not None and player2 is not None and player1 != player2:
                             edge_weight = event_weights.get((player1_var, player2_var), 0)
 
+                            # Add edge weights
                             if graph.has_edge(player1, player2):
                                 graph[player1][player2]['weight'] += edge_weight
                             else:
                                 graph.add_edge(player1, player2, weight=edge_weight)
     return graph
 
-
-
-
 def is_condition_met(row, variable):
     """
-    Check if the given condition (column) is met. This handles both booleans and numeric conditions.
+    Check if the given condition is met.
     """
     value = row.get(variable)
-
     # print(f"Checking condition for {variable}: {value}")
     if isinstance(value, bool):
         return value is True
@@ -49,7 +51,7 @@ def is_condition_met(row, variable):
         return pd.notna(value) and value >= 1
     return False
 
-# Dictionary of event pairs
+# Dictionary of condition pairs
 event_pairs = {
     ('hadDropback', 'hadPassReception'): 0,
     ('hadDropback', 'wasTargettedReceiver'): 0,
@@ -104,11 +106,6 @@ for (event1, event2), _ in event_pairs.items():
     new_value = 10 / (value1 + value2)
     updated_event_pairs[(event1, event2)] = new_value
 
-for key, value in updated_event_pairs.items():
-    print(f"{key}: {value:.3f}")
-
-
-
 conditions = [
     ('hadDropback', 'hadPassReception'),
     ('hadDropback', 'wasTargettedReceiver'),
@@ -118,21 +115,22 @@ conditions = [
     ('hadRushAttempt', 'tackleAssist'),
     ('hadDropback', 'hadInterception'),
     ('fumbleLost', 'fumbleRecoveries'),
-    ('fumbleLost', 'forcedFumbleAsDefense'), #maybe add forced fumble with rush attempt/pass recep
-    ('forcedFumbleAsDefense', 'hadPassReception'), #new
-    ('forcedFumbleAsDefense', 'hadRushAttempt'), #new
+    ('fumbleLost', 'forcedFumbleAsDefense'),
+    ('forcedFumbleAsDefense', 'hadPassReception'),
+    ('forcedFumbleAsDefense', 'hadRushAttempt'),
     ('hadDropback', 'causedPressure'),
     ('pressureAllowedAsBlocker', 'causedPressure'),
     ('hadDropback', 'passDefensed'),
     ('wasTargettedReceiver', 'passDefensed'),
     ('hadDropback', 'quarterbackHit'),
     ('hadDropback', 'sackYardsAsDefense'),
-    ('hadDropback', 'tackleAssist'), #new
-    ('hadDropback', 'soloTackle'), #new
+    ('hadDropback', 'tackleAssist'),
+    ('hadDropback', 'soloTackle'),
     ('tackleAssist', 'tackleAssist'),
     ('forcedFumbleAsDefense', 'fumbleRecoveries')
 ]
 
+# Need to invert conditions for second team in data set to get its edges
 inverted_conditions = [(y, x) for x, y in conditions]
 all_conditions = conditions + inverted_conditions
 
@@ -146,10 +144,12 @@ df_filtered = df[df['gameId'] == specific_game_id].reset_index(drop=True)
 
 
 # ======== Build the Network ===========
+# Update df here if you want to analyze a more specific network
 player_network = build_network(df, all_conditions, symmetric_event_weights)
 
 player_df = pd.read_csv('players.csv')
 
+# Add new columns to make the rows more meaningful
 for _, player_row in player_df.iterrows():
     nfl_id = player_row['nflId']
     if nfl_id in player_network.nodes:
@@ -164,12 +164,15 @@ for _, row in df.iterrows():
 
 
 # ======== Visualization of Network ============
+# Visualizes the network and saves an edge and node csv to your computer
+# Note: csv's are not distinct will rewrite every time code is run
 
 print(f"Player Interaction Network: {len(player_network.nodes)} nodes, {len(player_network.edges)} edges")
 nx.draw(player_network, with_labels=True, node_size=500, node_color="orange", font_size=8)
 plt.title("Player Interaction Network")
 plt.show()
 
+# This was the download path for my computer, need to update for your own
 downloads_path = os.path.expanduser('~/Desktop/Math-479')
 node_data = [(nfl_id, data['name'], data['position'], data.get('team')) for nfl_id, data in player_network.nodes(data=True)]
 node_data_df = pd.DataFrame(node_data, columns=['ID', 'Label', 'Position', 'Team'])
@@ -179,41 +182,15 @@ edges_data = [(player1, player2, data['weight']) for player1, player2, data in p
 edges_data_df = pd.DataFrame(edges_data, columns=['Source', 'Target', 'Weight'])
 edges_data_df.to_csv(os.path.join(downloads_path, 'player_network_edges.csv'), index=False)
 
-print("Player network nodes and edges have been saved to 'player_network_nodes.csv' and 'player_network_edges.csv'.")
-
 
 def get_degree_distribution(graph):
     """
     Extracts the degree distribution from a NetworkX graph.
     """
-                                                #weight='weight'
     weighted_degrees = [degree for _, degree in graph.degree(weight='weight')]
     return weighted_degrees
 
 
-def visualize_degree_distribution(degrees, name):
-    """
-    Visualize the degree distribution on linear and log-log scales.
-    """
-    # Unique degree values and their counts
-    unique_degrees = np.unique(degrees)
-    counts = [degrees.count(d) for d in unique_degrees]
-
-    # Linear scale
-    plt.figure(figsize=(8, 6))
-    plt.plot(unique_degrees, counts, 'o')
-    plt.xlabel("Degree")
-    plt.ylabel("Number of Nodes")
-    plt.title(f'Degree Distribution of {name}')
-    plt.show()
-
-    # Log-log scale
-    plt.figure(figsize=(8, 6))
-    plt.loglog(unique_degrees, counts, 'o')
-    plt.xlabel("Degree")
-    plt.ylabel("Number of Nodes")
-    plt.title(f'Log-Log Degree Distribution of {name}')
-    plt.show()
 
 def visualize_cumulative_degree_distribution(degrees, name):
     """
@@ -258,7 +235,7 @@ def fit_power_law(degrees, name):
     plt.title(f'Power Law Fit for {name}')
     plt.show()
 
+# Calls the functions above, create 3 plots to visualize network degree dist.
 degrees = get_degree_distribution(player_network)
-visualize_degree_distribution(degrees, "Player Network")
 visualize_cumulative_degree_distribution(degrees, "Player Network")
 fit_power_law(degrees, "Player Network")
