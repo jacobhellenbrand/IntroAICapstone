@@ -162,7 +162,6 @@ for _, row in df.iterrows():
         # Add team abbreviation as a node attribute
         player_network.nodes[nfl_id]['team'] = row['teamAbbr']
 
-
 # ======== Visualization of Network ============
 # Visualizes the network and saves an edge and node csv to your computer
 # Note: csv's are not distinct will rewrite every time code is run
@@ -172,6 +171,7 @@ nx.draw(player_network, with_labels=True, node_size=500, node_color="orange", fo
 plt.title("Player Interaction Network")
 plt.show()
 
+# ========= Download CSV's =============
 # This was the download path for my computer, need to update for your own
 downloads_path = os.path.expanduser('~/Desktop/Math-479')
 node_data = [(nfl_id, data['name'], data['position'], data.get('team')) for nfl_id, data in player_network.nodes(data=True)]
@@ -182,15 +182,12 @@ edges_data = [(player1, player2, data['weight']) for player1, player2, data in p
 edges_data_df = pd.DataFrame(edges_data, columns=['Source', 'Target', 'Weight'])
 edges_data_df.to_csv(os.path.join(downloads_path, 'player_network_edges.csv'), index=False)
 
-
 def get_degree_distribution(graph):
     """
     Extracts the degree distribution from a NetworkX graph.
     """
     weighted_degrees = [degree for _, degree in graph.degree(weight='weight')]
     return weighted_degrees
-
-
 
 def visualize_cumulative_degree_distribution(degrees, name):
     """
@@ -216,7 +213,6 @@ def visualize_cumulative_degree_distribution(degrees, name):
     plt.ylabel("Cumulative Fraction of Nodes")
     plt.title(f'Log-Log Cumulative Degree Distribution of {name}')
     plt.show()
-
 
 def fit_power_law(degrees, name):
     """
